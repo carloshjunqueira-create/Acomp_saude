@@ -1,0 +1,12 @@
+PAINEL DE SAÚDE — v4
+
+Substitua os arquivos da pasta publicada atual pelos arquivos desta pasta PUBLICAR.
+Mantenha o mesmo repositório, endereço, pasta, identidade do manifest (ícones renovados). Não mude de URL.
+Nenhum dado pessoal está embutido no aplicativo; tudo é armazenado no navegador.
+
+A migração automática lê painel-saude-carlos-v3 e grava em painel-saude-carlos-v4.
+Não apaga nem modifica a chave v3. Backups manuais v3 e v4 também são aceitos.
+Faça backup antes de atualizar. Não limpe os dados do Safari nem remova o app instalado.
+
+Para conferir antes do commit, siga ../REVISAO-V4.md no pacote entregue.
+A pasta auditoria-privada contém dados pessoais e NÃO deve ser publicada no GitHub.
