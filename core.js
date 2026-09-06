@@ -1,5 +1,6 @@
 import {EX,TREINOS,FASES,FILA,localDate,dateObj,addDays,isForca,num,seriesCompletas,faixaReps,nivelForcaPorDados,nivelCardioFase} from './protocol.js';
-export const SCHEMA='painel-saude/4';
+export const BACKUP_SCHEMA='painel-saude/backup';
+export const BACKUP_FORMAT=1;
 export const clone=x=>JSON.parse(JSON.stringify(x));
 export function canonical(x){return JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v)}
 export const SEMANTICS={
@@ -15,7 +16,7 @@ export const SEMANTICS={
 export const name=id=>SEMANTICS[id]?.name||EX[id]?.n||id;
 export const unit=id=>SEMANTICS[id]||{load:'unidade original',short:'un.',effort:'un.'};
 export function validateData(data){
- if(!data||data.v!==3||!Array.isArray(data.sessoes)||!Array.isArray(data.medidas))throw Error('Esperado um backup v3 do painel ou um backup v4.');
+ if(!data||!Array.isArray(data.sessoes)||!Array.isArray(data.medidas))throw Error('Backup sem histórico válido.');
  for(const group of ['sessoes','medidas']){
   const ids=new Set();for(const r of data[group]){
    if(!r||typeof r.id!=='string'||!r.id||!dateObj(r.data))throw Error('Registro sem ID ou data válida. Nenhum dado foi importado.');
@@ -31,17 +32,28 @@ export function validateData(data){
  }
  return data;
 }
-export function migrateV3(raw){validateData(raw);return {schema:SCHEMA,v:4,data:clone(raw),semantics:clone(SEMANTICS),originV3:clone(raw),imports:[]}}
-export function importBackup(raw){
- if(raw?.v===3)return migrateV3(raw);
- if(raw?.v!==4||raw.schema!==SCHEMA)throw Error('Versão de backup não suportada. Use v3 ou v4.');
- validateData(raw.data);if(raw.originV3)validateData(raw.originV3);
- if(!Array.isArray(raw.imports)||!raw.semantics)throw Error('Backup v4 incompleto.');return clone(raw);
+function cleanData(raw){
+ const data=clone(raw);delete data.v;validateData(data);return data;
 }
-export const empty=()=>migrateV3({v:3,sessoes:[],medidas:[],criado:localDate(),atualizado:null});
+function stableState(data,preferences={}){
+ return {schema:BACKUP_SCHEMA,format:BACKUP_FORMAT,data:cleanData(data),preferences:clone(preferences||{})};
+}
+export function importBackup(raw){
+ if(raw?.schema===BACKUP_SCHEMA&&raw?.format===BACKUP_FORMAT){
+  validateData(raw.data);
+  return {schema:BACKUP_SCHEMA,format:BACKUP_FORMAT,data:cleanData(raw.data),preferences:clone(raw.preferences||{})};
+ }
+ // Compatibilidade silenciosa com backups anteriores ao formato estável.
+ if(raw?.schema==='painel-saude/4'&&raw?.v===4&&raw?.data)return stableState(raw.data,raw.preferences);
+ if(raw?.v===3&&Array.isArray(raw?.sessoes)&&Array.isArray(raw?.medidas))return stableState(raw);
+ throw Error('Backup não reconhecido. Use um arquivo exportado pelo Painel de Saúde.');
+}
+export const empty=()=>stableState({sessoes:[],medidas:[],criado:localDate(),atualizado:null});
 export function mergeBackup(current,incoming){
  const a=importBackup(current),b=importBackup(incoming);let added=0;
- if(!a.data.sessoes.length&&!a.data.medidas.length&&!a.data.atualizado&&!a.imports.length&&Object.keys(a.data).every(k=>['v','sessoes','medidas','criado','atualizado'].includes(k)))return {state:{...a,...b,...(a.preferences&&!b.preferences?{preferences:a.preferences}:{})},added:b.data.sessoes.length+b.data.medidas.length};
+ if(!a.data.sessoes.length&&!a.data.medidas.length&&!a.data.atualizado){
+  return {state:{...b,preferences:Object.keys(b.preferences||{}).length?b.preferences:a.preferences},added:b.data.sessoes.length+b.data.medidas.length};
+ }
  for(const field of ['sessoes','medidas']){
   const byId=new Map(a.data[field].map(r=>[r.id,r]));
   for(const r of b.data[field]){
@@ -50,8 +62,7 @@ export function mergeBackup(current,incoming){
    if(!old){a.data[field].push(clone(r));byId.set(r.id,r);added++}
   }
  }
- // Retain the incoming envelope (including unknown fields) for full provenance.
- if(canonical(a.data)!==canonical(b.data)&&!a.imports.some(x=>canonical(x)===canonical(b)))a.imports.push(clone(b));
+ if(!Object.keys(a.preferences||{}).length&&Object.keys(b.preferences||{}).length)a.preferences=clone(b.preferences);
  return {state:a,added};
 }
 export function ordered(data){return data.sessoes.slice().sort((a,b)=>a.data.localeCompare(b.data)||(a.criadoEm||'').localeCompare(b.criadoEm||''))}
@@ -120,7 +131,7 @@ export function formatSeries(id,series){return series.map(x=>(EX[id]?.semCarga?'
 export function summary(data,period=7,today=localDate()){
  const st=stats(data),start=period==='all'?null:addDays(today,1-Number(period));const inRange=d=>(!start||d>=start)&&d<=today;
  const sessions=ordered(data).filter(s=>inRange(s.data));
- const lines=['PAINEL DE SAÚDE — Carlos — v4','Período: '+(start||'início')+' a '+today,'Fase '+st.phase+' · força A/B acumulada: '+st.force+' · válidas: '+st.valid+' · parciais: '+st.partial+' · próxima: '+st.next,'Apple Health: fonte fisiológica; dados não importados no painel.','SESSÕES DO PERÍODO: '+sessions.length];
+ const lines=['PAINEL DE SAÚDE — Carlos','Período: '+(start||'início')+' a '+today,'Fase '+st.phase+' · força A/B acumulada: '+st.force+' · válidas: '+st.valid+' · parciais: '+st.partial+' · próxima: '+st.next,'Apple Health: fonte fisiológica; dados não importados no painel.','SESSÕES DO PERÍODO: '+sessions.length];
  for(const s of sessions){lines.push(s.data+' | '+s.tipo+' | meta '+s.meta+' → '+s.nivel+' | fase '+s.fase+' | técnica/RIR '+((s.techniqueRirConfirmed??s.progressaoOk)?'confirmados':'não confirmados')+' | cardio '+(s.cardio.min??'não informado')+' min'+(s.cardio.feito?' (feito)':'')+(s.cardio.zona2Confirmada!==undefined?' | Z2 '+(s.cardio.zona2Confirmada?'confirmada':'não confirmada'):''));for(const e of s.exercicios)lines.push('  '+name(e.id)+': '+formatSeries(e.id,e.series));if(s.notas)lines.push('  Nota: '+s.notas)}
  lines.push('ÚLTIMA EXECUÇÃO POR EXERCÍCIO (histórico até '+today+'):');
  const limited={...data,sessoes:data.sessoes.filter(s=>s.data<=today)};

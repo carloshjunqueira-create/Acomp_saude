@@ -1,4 +1,4 @@
-/* Protocolo v3 preservado: definições e classificadores extraídos da fonte auditada. */
+/* Definições e classificadores do protocolo vigente. */
 const EX={
  legpress:{cunit:'kg por lado',n:'Leg press (placas)',g:'Quadríceps + glúteo',reps:'10–12',s:[2,3,3],c0:'20 kg por lado',kg0:20,prog:'+5 kg/lado',nota:'Pés na largura do quadril, meio da plataforma. Desça com controle sem tirar o quadril do encosto.'},
  supino:{cunit:'kg totais',n:'Supino reto (barra)',g:'Peitoral, tríceps, ombro',reps:'8–10',s:[2,3,3],c0:'barra vazia (20 kg)',kg0:20,prog:'+2,5 a 5 kg',nota:'Escápulas firmes; barra na linha do peito. Sem parceiro, preserve margem e use travas/segurança quando disponível.'},
