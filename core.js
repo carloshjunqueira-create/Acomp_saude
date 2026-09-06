@@ -43,9 +43,9 @@ export function importBackup(raw){
   validateData(raw.data);
   return {schema:BACKUP_SCHEMA,format:BACKUP_FORMAT,data:cleanData(raw.data),preferences:clone(raw.preferences||{})};
  }
- // Compatibilidade silenciosa com backups anteriores ao formato estável.
- if(raw?.schema==='painel-saude/4'&&raw?.v===4&&raw?.data)return stableState(raw.data,raw.preferences);
- if(raw?.v===3&&Array.isArray(raw?.sessoes)&&Array.isArray(raw?.medidas))return stableState(raw);
+ // Compatibilidade silenciosa com envelopes e backups anteriores ao formato estável.
+ if(raw?.data&&Array.isArray(raw.data?.sessoes)&&Array.isArray(raw.data?.medidas))return stableState(raw.data,raw.preferences);
+ if(Array.isArray(raw?.sessoes)&&Array.isArray(raw?.medidas))return stableState(raw,raw.preferences);
  throw Error('Backup não reconhecido. Use um arquivo exportado pelo Painel de Saúde.');
 }
 export const empty=()=>stableState({sessoes:[],medidas:[],criado:localDate(),atualizado:null});

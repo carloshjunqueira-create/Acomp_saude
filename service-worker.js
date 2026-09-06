@@ -1,5 +1,5 @@
 // Shell completo por revisão de cache, sem misturar assets de publicações diferentes.
-const CACHE='painel-saude-shell-20260906-1';
+const CACHE='painel-saude-shell-20260906-2';
 const ASSETS=['./guia-mob.html','./mob-mobilidade.png','./mob-alongamentos.png','./','./index.html','./painel-saude.html','./app.js','./core.js','./protocol.js','./storage.js','./style.css','./painel-saude.webmanifest','./icone-180.png','./icone-192.png','./icone-512.png'];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);

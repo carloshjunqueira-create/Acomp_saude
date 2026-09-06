@@ -7,12 +7,19 @@ export const KEYS={
  draft:'painel-saude-carlos-draft'
 };
 
-// Somente para migração silenciosa de instalações já existentes.
-// Essas chaves não aparecem na interface e nunca são apagadas automaticamente.
-export const LEGACY_KEYS={
- main:['painel-saude-carlos-v4','painel-saude-carlos-v4-bak','painel-saude-carlos-v3','painel-saude-carlos-v3-bak'],
- draft:['painel-saude-carlos-v4-draft','painel-saude-carlos-v3-draft']
-};
+// Compatibilidade silenciosa com instalações anteriores à chave estável.
+// A descoberta é por padrão de nome; nenhuma versão histórica faz parte do app atual.
+function previousKeys(storage,kind){
+ const found=[];
+ try{
+  for(let i=0;i<storage.length;i++){
+   const key=storage.key(i);if(!key)continue;
+   if(kind==='draft'){if(/^painel-saude-carlos-v[^-]+-draft$/i.test(key))found.push(key)}
+   else if(/^painel-saude-carlos-v[^-]+(?:-bak)?$/i.test(key))found.push(key);
+  }
+ }catch{}
+ return found;
+}
 
 export class Repository{
  constructor(storage){this.storage=storage;this.raw=null;this.canWrite=false;this.state=empty();this.message='';}
@@ -31,7 +38,7 @@ export class Repository{
    try{this.state=importBackup(JSON.parse(bak));this.commit(this.state);this.message='Histórico recuperado de uma cópia de segurança.';return this.state}
    catch{}
   }
-  for(const key of LEGACY_KEYS.main){
+  for(const key of previousKeys(storage,'main')){
    const raw=storage.getItem(key);if(!raw)continue;
    try{
     this.state=importBackup(JSON.parse(raw));
@@ -64,7 +71,7 @@ export class Repository{
  readDraft(){
   const saved=this.storage.getItem(KEYS.draft);
   if(saved!==null){try{return JSON.parse(saved).rascunho||null}catch{return null}}
-  for(const key of LEGACY_KEYS.draft){
+  for(const key of previousKeys(this.storage,'draft')){
    const raw=this.storage.getItem(key);if(!raw)continue;
    try{
     const draft=JSON.parse(raw).rascunho||null;
