@@ -49,6 +49,19 @@ export function importBackup(raw){
  throw Error('Backup não reconhecido. Use um arquivo exportado pelo Painel de Saúde.');
 }
 export const empty=()=>stableState({sessoes:[],medidas:[],criado:localDate(),atualizado:null});
+export function updateSessionMeta(data,id,{data:sessionDate,notas},today=localDate()){
+ const next=clone(data),session=next.sessoes.find(s=>s.id===id);
+ if(!session)throw Error('Sessão não encontrada.');
+ if(!dateObj(sessionDate)||sessionDate>today)throw Error('Escolha uma data válida, até hoje.');
+ session.data=sessionDate;session.notas=String(notas??'').trim();
+ validateData(next);return next;
+}
+export function deleteSession(data,id){
+ const next=clone(data),before=next.sessoes.length;
+ next.sessoes=next.sessoes.filter(s=>s.id!==id);
+ if(next.sessoes.length===before)throw Error('Sessão não encontrada.');
+ validateData(next);return next;
+}
 export function mergeBackup(current,incoming){
  const a=importBackup(current),b=importBackup(incoming);let added=0;
  if(!a.data.sessoes.length&&!a.data.medidas.length&&!a.data.atualizado){

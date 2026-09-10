@@ -14,3 +14,5 @@ body{font-size:16px}.wrap{max-width:800px;padding:0 20px}header{padding-bottom:1
 @media(max-width:420px){.wrap{padding:0 14px}.hero,.card{padding:16px}.hero h2{font-size:26px}.linha{gap:6px}.kpi{padding:14px 9px}.kpi .l{font-size:13px}.kpi .n{font-size:26px}.serie{flex-basis:130px}.seletor.cinco{grid-template-columns:repeat(3,minmax(0,1fr))}.ex-cab{align-items:flex-start}.btnrow>.btn{flex-basis:120px}nav.tabs button{font-size:12px}.week-bar small{font-size:11px}}
 @media(min-width:700px){.hero{padding:28px}.series{flex-wrap:wrap}.serie{flex:0 1 220px}header{padding-top:28px}.card{padding:24px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+button[data-action="delete-session"]{border-color:#8b4a45!important;color:#f0aaa2!important}button[data-action="delete-session"]:focus-visible{outline-color:#f0aaa2!important}.record-actions{margin:14px 0 4px}
